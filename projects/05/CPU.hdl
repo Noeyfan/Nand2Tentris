@@ -39,5 +39,50 @@ CHIP CPU {
         pc[15];          // address of next instruction
 
     PARTS:
-    // Put your code here:
+      // itype: 1 means A instruction, 0 means C instruction
+      Nand (a=instruction[15], b=true, out=itype);
+      Or (a=itype, b=instruction[5], out=aload);
+
+      // A register
+      Mux16 (a=aluout, b[15]=false, b[0..14]=instruction[0..14], sel=itype, out=addr);
+      ARegister (in=addr, load=aload, out=aout);
+
+      // D register
+      DRegister (in=aluout, load=instruction[4], out=dout);
+
+      // Pick A or M
+      Mux16 (a=aout, b=inM, sel=instruction[12], out=aorm);
+
+      // ALU
+      ALU (x=dout,
+           y=aorm,
+           zx=instruction[11],
+           nx=instruction[10],
+           zy=instruction[9],
+           ny=instruction[8],
+           f= instruction[7],
+           no=instruction[6],
+           out=aluout,
+           zr=aluzr,
+           ng=alung
+        );
+
+      // writeM
+      And (a=instruction[3], b=instruction[15], out=writeM);
+
+      // PC
+      Not (in=alung, out=alunotng);
+      Not (in=aluzr, out=alunotzr);
+      And (a=alunotng, b=alunotzr, out=aluge);
+      Or (a=alung, b=aluzr, out=alule);
+      Mux8Way (a=false, b=aluge, c=aluzr, d=alunotng, e=alung, f=alunotzr, g=alule, h=true, sel=instruction[0..2], out=pcsel);
+      And (a=pcsel, b=instruction[15], out=pcload);
+      Not (in=pcload, out=pcinc);
+      PC (in=aout, load=pcload, inc=pcinc, reset=reset, out[0..14]=pc);
+
+      // addressM
+      And16 (a=aout, b=true, out[0..14]=addressM);
+
+      // outM
+      And16 (a=aluout, b=true, out=outM);
 }
