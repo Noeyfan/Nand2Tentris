@@ -1,0 +1,86 @@
+class Bird {
+  field int location;
+
+  constructor Bird new() {
+    let location = 4104;
+    return this;
+  }
+
+  method void dispose() {
+    do Memory.deAlloc(this);
+    return;
+  }
+
+  // better put in a math library
+  method boolean isOverlap(int x1, int x2, int y1, int y2) {
+    return ((x2 > y1) & (x2 < y2)) | ((x1 > y1) & (x1 < y2));
+  }
+
+  method boolean hasHitWall(int wallX1, int wallX2, int wallY1, int wallY2) {
+    var int x1, x2, y1, y2;
+    let y1  = (location / 32); // 1 ~ 254
+    let x1  = 128;             // bird only goes up and down
+    let x2 = x1 + 10;
+    let y2 = y1 + 10;
+
+    return (isOverlap(x1, x2, wallX1, wallX2) & isOverlap(y1, y2, wallY1, wallY2));
+  }
+
+  method void flap() {
+    do erase();
+    let location = location - (32 * 10);
+    do draw();
+    return;
+  }
+
+  method void drop(int t) {
+    do erase();
+    let location = location + ((1 * t * t / 4) * 32);
+    do draw();
+    return;
+  }
+
+  method void draw() {
+    var int memAddress;
+    let memAddress = 16384+location;
+	do Memory.poke(memAddress+0, 0);
+	do Memory.poke(memAddress+32, 0);
+	do Memory.poke(memAddress+64, 0);
+	do Memory.poke(memAddress+96, 1984);
+	do Memory.poke(memAddress+128, 2352);
+	do Memory.poke(memAddress+160, 4360);
+	do Memory.poke(memAddress+192, 10382);
+	do Memory.poke(memAddress+224, 10385);
+	do Memory.poke(memAddress+256, 8481);
+	do Memory.poke(memAddress+288, 32289);
+	do Memory.poke(memAddress+320, -32482);
+	do Memory.poke(memAddress+352, 32386);
+	do Memory.poke(memAddress+384, 8452);
+	do Memory.poke(memAddress+416, 15896);
+	do Memory.poke(memAddress+448, 480);
+	do Memory.poke(memAddress+480, 0);
+	return;
+  }
+
+  method void erase() {
+    var int memAddress;
+    let memAddress = 16384+location;
+	do Memory.poke(memAddress+0, 0);
+	do Memory.poke(memAddress+32, 0);
+	do Memory.poke(memAddress+64, 0);
+	do Memory.poke(memAddress+96, 0);
+	do Memory.poke(memAddress+128, 0);
+	do Memory.poke(memAddress+160, 0);
+	do Memory.poke(memAddress+192, 0);
+	do Memory.poke(memAddress+224, 0);
+	do Memory.poke(memAddress+256, 0);
+	do Memory.poke(memAddress+288, 0);
+	do Memory.poke(memAddress+320, 0);
+	do Memory.poke(memAddress+352, 0);
+	do Memory.poke(memAddress+384, 0);
+	do Memory.poke(memAddress+416, 0);
+	do Memory.poke(memAddress+448, 0);
+	do Memory.poke(memAddress+480, 0);
+	return;
+  }
+}

@@ -1,0 +1,112 @@
+function Game.new 0
+push constant 1
+call Memory.alloc 1
+pop pointer 0
+call Bird.new 0
+pop this 0
+push pointer 0
+return
+function Game.dispose 0
+push argument 0
+pop pointer 0
+push this 0
+call Bird.dispose 1
+pop temp 0
+push pointer 0
+call Memory.deAlloc 1
+pop temp 0
+push constant 0
+return
+function Game.run 5
+push argument 0
+pop pointer 0
+push constant 0
+push constant 100
+call Wall.new 2
+pop local 3
+push constant 140
+push constant 254
+push constant 140
+sub
+call Wall.new 2
+pop local 4
+push constant 0
+pop local 1
+label WHILE_EXP0
+push local 2
+not
+not
+if-goto WHILE_END0
+call Keyboard.keyPressed 0
+pop local 0
+push local 0
+push constant 81
+eq
+if-goto IF_TRUE0
+goto IF_FALSE0
+label IF_TRUE0
+push constant 0
+not
+pop local 2
+label IF_FALSE0
+push local 0
+push constant 32
+eq
+if-goto IF_TRUE1
+goto IF_FALSE1
+label IF_TRUE1
+push this 0
+call Bird.flap 1
+pop temp 0
+push constant 1
+pop local 1
+label IF_FALSE1
+push this 0
+push local 1
+call Bird.drop 2
+pop temp 0
+push this 0
+push local 3
+call Wall.getX1 1
+push local 3
+call Wall.getX2 1
+push local 3
+call Wall.getY1 1
+push local 3
+call Wall.getY2 1
+call Bird.hasHitWall 5
+push this 0
+push local 4
+call Wall.getX1 1
+push local 4
+call Wall.getX2 1
+push local 4
+call Wall.getY1 1
+push local 4
+call Wall.getY2 1
+call Bird.hasHitWall 5
+or
+if-goto IF_TRUE2
+goto IF_FALSE2
+label IF_TRUE2
+push constant 0
+not
+pop local 2
+label IF_FALSE2
+push local 1
+push constant 1
+add
+pop local 1
+push constant 100
+call Sys.wait 1
+pop temp 0
+push local 3
+call Wall.moveLeft 1
+pop temp 0
+push local 4
+call Wall.moveLeft 1
+pop temp 0
+goto WHILE_EXP0
+label WHILE_END0
+push constant 0
+return

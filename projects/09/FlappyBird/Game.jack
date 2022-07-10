@@ -1,0 +1,48 @@
+class Game {
+  field Bird bird;
+
+  constructor Game new() {
+    let bird = Bird.new();
+    return this;
+  }
+
+  method void dispose() {
+    do bird.dispose();
+    do Memory.deAlloc(this);
+    return;
+  }
+
+  method void run() {
+    var char key;
+    var int t;
+    var boolean exit;
+    var Wall upperWall, lowerWall;
+    let upperWall = Wall.new(0, 100);
+    let lowerWall = Wall.new(140, 254 - 140);
+
+    let t = 0;
+    while(~exit) {
+      let key = Keyboard.keyPressed();
+
+      if (key = 81)  { let exit = true; }
+      if (key = 32) { // space
+        do bird.flap();
+        // reset t
+        let t = 1;
+      }
+      do bird.drop(t);
+
+      if (bird.hasHitWall(upperWall.getX1(), upperWall.getX2(), upperWall.getY1(), upperWall.getY2()) |
+          bird.hasHitWall(lowerWall.getX1(), lowerWall.getX2(), lowerWall.getY1(), lowerWall.getY2()))
+      {
+        let exit = true;
+      }
+
+      let t = t + 1;
+      do Sys.wait(100);
+      do upperWall.moveLeft();
+      do lowerWall.moveLeft();
+    }
+    return;
+  }
+}

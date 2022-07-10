@@ -1,0 +1,48 @@
+class Wall {
+  field int x, y;
+  field int width, height;
+
+  constructor Wall new(int start, int h) {
+    let width = 30;
+    let height = h;
+    let x = 510 - width;
+    let y = start;
+    return this;
+  }
+
+  method void dispose() {
+    do Memory.deAlloc(this);
+    return;
+  }
+
+  method int getX1() {
+    return x;
+  }
+
+  method int getX2() {
+    return x + width;
+  }
+
+  method int getY1() {
+    return y;
+  }
+
+  method int getY2() {
+    return y + height;
+  }
+
+  method void moveLeft() {
+    if (x > 1) {
+      do Screen.setColor(false);
+      do Screen.drawRectangle((x + width) - 1, y, x + width, y + height);
+      let x = x - 2;
+      do Screen.setColor(true);
+      do Screen.drawRectangle(x, y, x + 1, y + height);
+    } else {
+      do Screen.setColor(false);
+      do Screen.drawRectangle(0, y, x + width, y + height);
+      do dispose();
+    }
+    return;
+  }
+}

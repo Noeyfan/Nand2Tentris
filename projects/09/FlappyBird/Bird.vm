@@ -1,0 +1,317 @@
+function Bird.new 0
+push constant 1
+call Memory.alloc 1
+pop pointer 0
+push constant 4104
+pop this 0
+push pointer 0
+return
+function Bird.dispose 0
+push argument 0
+pop pointer 0
+push pointer 0
+call Memory.deAlloc 1
+pop temp 0
+push constant 0
+return
+function Bird.isOverlap 0
+push argument 0
+pop pointer 0
+push argument 2
+push argument 3
+gt
+push argument 2
+push argument 4
+lt
+and
+push argument 1
+push argument 3
+gt
+push argument 1
+push argument 4
+lt
+and
+or
+return
+function Bird.hasHitWall 4
+push argument 0
+pop pointer 0
+push this 0
+push constant 32
+call Math.divide 2
+pop local 2
+push constant 128
+pop local 0
+push local 0
+push constant 10
+add
+pop local 1
+push local 2
+push constant 10
+add
+pop local 3
+push pointer 0
+push local 0
+push local 1
+push argument 1
+push argument 2
+call Bird.isOverlap 5
+push pointer 0
+push local 2
+push local 3
+push argument 3
+push argument 4
+call Bird.isOverlap 5
+and
+return
+function Bird.flap 0
+push argument 0
+pop pointer 0
+push pointer 0
+call Bird.erase 1
+pop temp 0
+push this 0
+push constant 32
+push constant 10
+call Math.multiply 2
+sub
+pop this 0
+push pointer 0
+call Bird.draw 1
+pop temp 0
+push constant 0
+return
+function Bird.drop 0
+push argument 0
+pop pointer 0
+push pointer 0
+call Bird.erase 1
+pop temp 0
+push this 0
+push constant 1
+push argument 1
+call Math.multiply 2
+push argument 1
+call Math.multiply 2
+push constant 4
+call Math.divide 2
+push constant 32
+call Math.multiply 2
+add
+pop this 0
+push pointer 0
+call Bird.draw 1
+pop temp 0
+push constant 0
+return
+function Bird.draw 1
+push argument 0
+pop pointer 0
+push constant 16384
+push this 0
+add
+pop local 0
+push local 0
+push constant 0
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 32
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 64
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 96
+add
+push constant 1984
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 128
+add
+push constant 2352
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 160
+add
+push constant 4360
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 192
+add
+push constant 10382
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 224
+add
+push constant 10385
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 256
+add
+push constant 8481
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 288
+add
+push constant 32289
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 320
+add
+push constant 32482
+neg
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 352
+add
+push constant 32386
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 384
+add
+push constant 8452
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 416
+add
+push constant 15896
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 448
+add
+push constant 480
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 480
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+push constant 0
+return
+function Bird.erase 1
+push argument 0
+pop pointer 0
+push constant 16384
+push this 0
+add
+pop local 0
+push local 0
+push constant 0
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 32
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 64
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 96
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 128
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 160
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 192
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 224
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 256
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 288
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 320
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 352
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 384
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 416
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 448
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+push local 0
+push constant 480
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+push constant 0
+return
