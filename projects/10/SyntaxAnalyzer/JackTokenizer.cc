@@ -14,6 +14,9 @@ enum TokenTypes {
     IDENTIFIER,
     INT_CONST,
     STRING_CONST,
+
+    // bypass check
+    NO_CHECK,
 };
 
 class JackTokenizer {
@@ -30,8 +33,8 @@ private:
         {"int", KeyWords::INT},
         {"char", KeyWords::CHAR},
         {"boolean", KeyWords::BOOLEAN},
-        {"void", KeyWords::TRUE},
-        {"true", KeyWords::FALSE},
+        {"void", KeyWords::VOID},
+        {"true", KeyWords::TRUE},
         {"false", KeyWords::FALSE},
         {"null", KeyWords::JNULL},
         {"this", KeyWords::THIS},
@@ -61,6 +64,15 @@ private:
   void consume(ifstream& file, string& token) {
       char c = file.get();
       token += c;
+  }
+
+  string escapeSymbol(char c) {
+      if (c == '<') return "&lt;";
+      if (c == '>') return "&gt;";
+      if (c == '&') return "&amp;";
+      string result = "";
+      result += c;
+      return result;
   }
 
 public:
@@ -151,7 +163,8 @@ public:
   }
 
   int keyWord() {
-      return keywords[token];
+      if (keywords.contains(token)) return keywords[token];
+      return -1;
   }
 
   char symbol() {
@@ -170,4 +183,26 @@ public:
       return token;
   }
 
+  string getXml(TokenTypes type) {
+      if (type != NO_CHECK && type != tokenType()) {
+          cerr << "expected: "<< type << ", " << "actual: " << tokenType()  <<"\n";
+          cerr << "token xml: " << getXml(NO_CHECK) <<"\n";
+          assert(false);
+      }
+
+      switch(type) {
+        case KEYWORD:
+          return "<keyword>" + stringVal() + "</keyword>";
+        case SYMBOL:
+          return "<symbol>" + escapeSymbol(symbol()) + "</symbol>";
+        case IDENTIFIER:
+          return "<identifier>" + identifier() + "</identifier>";
+        case INT_CONST:
+          return "<integerConstant>" + stringVal() + "</integerConstant>";
+        case STRING_CONST:
+          return "<stringConstant>" + stringVal() + "</stringConstant>";
+        case NO_CHECK:
+          return getXml(tokenT);
+      }
+  }
 };
