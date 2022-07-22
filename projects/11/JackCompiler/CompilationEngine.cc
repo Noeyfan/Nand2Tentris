@@ -1,10 +1,10 @@
-#include <fstream>
-using namespace std;
-
 class CompilationEngine {
 private:
   JackTokenizer jt;
+  VMWriter vw;
   ofstream& output;
+  SymbolTable classSt;
+  SymbolTable fnSt;
 
   // helper
   void eatAndWriteToken(TokenTypes t) {
@@ -22,7 +22,7 @@ private:
   }
 
 public:
-  CompilationEngine(ifstream& in, ofstream& out): jt(in), output(out) {}
+  CompilationEngine(ifstream& in, ofstream& out): jt(in), vw(out), output(out) {}
 
   void compileClass() {
       assert(jt.hasMoreTokens());
@@ -57,9 +57,11 @@ public:
   void compileClassVarDec() {
       while (jt.keyWord() == STATIC || jt.keyWord() == FIELD) {
           output << "<classVarDec>\n";
+          Kind kind = (jt.keyWord() == STATIC) ? KIND_STATIC : KIND_FIELD;
           eatAndWriteToken(KEYWORD);
 
           // type
+          string type = jt.stringVal();
           if (jt.keyWord() == INT
               || jt.keyWord() == CHAR
               || jt.keyWord() == BOOLEAN
@@ -70,7 +72,11 @@ public:
           }
 
           // varName
+          string name = jt.stringVal();
           eatAndWriteToken(IDENTIFIER);
+
+          cout << "class->";
+          classSt.define(name, type, kind);
 
           // , varName
           while (jt.tokenType() == SYMBOL && jt.symbol() == ',') {
@@ -118,6 +124,9 @@ public:
 
           compileSubroutineBody();
 
+          // clear symbol table
+          fnSt.clear();
+
           output << "</subroutineDec>\n";
       }
   }
@@ -125,6 +134,7 @@ public:
   void compileParameterList() {
       output << "<parameterList>\n";
 
+      string type = jt.stringVal();;
       if (jt.keyWord() == INT
           || jt.keyWord() == CHAR
           || jt.keyWord() == BOOLEAN
@@ -138,6 +148,8 @@ public:
       }
 
       // varName
+      cout << "fn->";
+      fnSt.define(jt.stringVal(), type, KIND_ARG);
       eatAndWriteToken(IDENTIFIER);
 
       // , type varName
@@ -145,6 +157,7 @@ public:
           eatAndWriteToken(SYMBOL);
 
           // type
+          type = jt.stringVal();;
           if (jt.keyWord() == INT
               || jt.keyWord() == CHAR
               || jt.keyWord() == BOOLEAN
@@ -155,6 +168,8 @@ public:
           }
 
           // varName
+          cout << "fn->";
+          fnSt.define(jt.stringVal(), type, KIND_ARG);
           eatAndWriteToken(IDENTIFIER);
       }
 
@@ -186,6 +201,7 @@ public:
           eatAndWriteToken(KEYWORD);
 
           // type
+          string type = jt.stringVal();
           if (jt.keyWord() == INT
               || jt.keyWord() == CHAR
               || jt.keyWord() == BOOLEAN
@@ -196,11 +212,18 @@ public:
           }
 
           // varName
+          cout << "fn->";
+          fnSt.define(jt.stringVal(), type, KIND_VAR);
           eatAndWriteToken(IDENTIFIER);
 
           // , varName
           while (jt.tokenType() == SYMBOL && jt.symbol() == ',') {
+              // ,
               eatAndWriteToken(SYMBOL);
+
+              // varName with same type
+              cout << "fn->";
+              fnSt.define(jt.stringVal(), type, KIND_VAR);
               eatAndWriteToken(IDENTIFIER);
           }
 
@@ -239,6 +262,7 @@ public:
       eatAndWriteToken(KEYWORD);
 
       // varName
+      cout << "using: " << jt.stringVal() << "\n";
       eatAndWriteToken(IDENTIFIER);
 
       // [
@@ -333,6 +357,10 @@ public:
 
       // subroutineCall
       // subroutineName or (className | varName)
+      string id = jt.stringVal();
+      if (fnSt.kindOf(id) != -1 || classSt.kindOf(id) != -1) {
+          cout << "using: " << id << "\n";
+      }
       eatAndWriteToken(IDENTIFIER);
 
       if (jt.tokenType() == SYMBOL && jt.symbol() == '.') {
@@ -408,6 +436,7 @@ public:
           compileTerm();
       } else if (jt.tokenType() == IDENTIFIER) {
           // varName or subroutineCall
+          string id = jt.stringVal();
           string curToken = jt.getXml(IDENTIFIER);
           jt.advance();
 
@@ -452,6 +481,7 @@ public:
               eatAndWriteToken(SYMBOL);
           } else {
               // foo
+              cout << "using: " << id << "\n";
               output << curToken << "\n";
           }
       }

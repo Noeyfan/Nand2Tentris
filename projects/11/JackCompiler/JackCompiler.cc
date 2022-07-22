@@ -1,7 +1,9 @@
 #include <string>
 #include <iostream>
 #include <filesystem>
+#include "./SymbolTable.cc"
 #include "./JackTokenizer.cc"
+#include "./VMWriter.cc"
 #include "./CompilationEngine.cc"
 using namespace std;
 

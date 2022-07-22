@@ -19,6 +19,30 @@ enum TokenTypes {
     NO_CHECK,
 };
 
+static unordered_map<int, string> keywordsRevrse = {
+      {KeyWords::CLASS,       "class"},
+      {KeyWords::CONSTRUCTOR, "constructor"},
+      {KeyWords::FUNCTION,    "function"},
+      {KeyWords::METHOD,      "method"},
+      {KeyWords::FIELD,       "field"},
+      {KeyWords::STATIC,      "static"},
+      {KeyWords::VAR,         "var"},
+      {KeyWords::INT,         "int"},
+      {KeyWords::CHAR,        "char"},
+      {KeyWords::BOOLEAN,     "boolean"},
+      {KeyWords::VOID,        "void"},
+      {KeyWords::TRUE,        "true"},
+      {KeyWords::FALSE,       "false"},
+      {KeyWords::JNULL,       "null"},
+      {KeyWords::THIS,        "this"},
+      {KeyWords::LET,         "let"},
+      {KeyWords::DO,          "do"},
+      {KeyWords::IF,          "if"},
+      {KeyWords::ELSE,        "else"},
+      {KeyWords::WHILE,       "while"},
+      {KeyWords::RETURN,      "return"},
+};
+
 class JackTokenizer {
 private:
   // static
