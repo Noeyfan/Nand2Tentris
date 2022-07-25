@@ -13,17 +13,17 @@ void processSingleFile(const string& path) {
     size_t lastSlash = path.find_last_of("/");
     size_t start = 0;
 
-    // string filename = path.substr(start, lastDot - start);
     if (lastSlash == -1) {
         start = 0;
     } else {
         start = lastSlash+1;
     }
+    string filename = path.substr(start, lastDot - start);
 
     std::ifstream input(path);
-    std::ofstream output(path.substr(0, lastDot) + ".out.xml");
+    std::ofstream output(path.substr(0, lastDot) + ".vm");
 
-    CompilationEngine ce(input, output);
+    CompilationEngine ce(input, output, filename);
     ce.compileClass();
 }
 

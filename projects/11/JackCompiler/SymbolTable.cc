@@ -30,8 +30,7 @@ public:
         int cnt = varCount(kind);
         table[name] = {type, kind, cnt};
         countByKind[kind]+=1;
-
-        cout << "defined:" << name << "," << type << "," << kind << "," << cnt << "\n";
+        // cout << "defined:" << name << "," << type << "," << kind << "," << cnt << "\n";
     }
 
     int varCount(Kind kind) {
