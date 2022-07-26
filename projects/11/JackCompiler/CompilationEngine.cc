@@ -2,9 +2,11 @@ class CompilationEngine {
 private:
   JackTokenizer jt;
   VMWriter vw;
+  string className;
+
   SymbolTable classSt;
   SymbolTable fnSt;
-  string className;
+  int label;
 
   // helper
   void eat(TokenTypes t) {
@@ -35,11 +37,22 @@ private:
       assert(false);
   }
 
+  bool hasSymbol(const string& id) {
+      return (classSt.kindOf(id) != -1) || (fnSt.kindOf(id) != -1);
+  }
+
   void writePushVar(string& id) {
       SymbolTable& st = getSymbolTable(id);
       int kind = st.kindOf(id);
       int index = st.indexOf(id);
       vw.writePush(kindsToSeg[kind], index);
+  }
+
+  void writePopVar(string& id) {
+      SymbolTable& st = getSymbolTable(id);
+      int kind = st.kindOf(id);
+      int index = st.indexOf(id);
+      vw.writePop(kindsToSeg[kind], index);
   }
 
   void writeOp(char op) {
@@ -50,17 +63,22 @@ private:
       vw.writeArithmetic(uops[op]);
   }
 
+  string nextLabel() {
+      return "L" + to_string(label++);
+  }
+
 public:
   CompilationEngine(
     ifstream& in,
     ofstream& out,
-    string fileName): jt(in), vw(out), className(fileName) {}
+    string fileName): jt(in), vw(out), className(fileName), label(0) {}
 
   void compileClass() {
       assert(jt.hasMoreTokens());
       assert(jt.keyWord() == CLASS);
 
       // class
+      vw.writeComment("class " + className) ;
       eat(KEYWORD);
 
       // class Name
@@ -77,6 +95,8 @@ public:
 
       // }
       eat(SYMBOL);
+
+      vw.writeComment("class " + className) ;
   }
 
   /**
@@ -104,7 +124,7 @@ public:
           string name = jt.stringVal();
           eat(IDENTIFIER);
 
-          cout << "class->";
+          vw.writeComment("classVarDec: " + name + ", " + type);
           classSt.define(name, type, kind);
 
           // , varName
@@ -118,6 +138,7 @@ public:
       }
   }
 
+  // TODO, complete me next
   void compileSubroutineDec() {
       while (jt.keyWord() == CONSTRUCTOR
           || jt.keyWord() == FUNCTION
@@ -137,7 +158,7 @@ public:
           }
 
           // subroutineName
-          vw.writeFunction(className + "." + jt.stringVal(), 0); // TODO nlocal
+          string fn = className + "." + jt.stringVal();
           eat(IDENTIFIER);
 
           // (
@@ -149,7 +170,7 @@ public:
           // )
           eat(SYMBOL);
 
-          compileSubroutineBody();
+          compileSubroutineBody(fn);
 
           // clear symbol table
           fnSt.clear();
@@ -170,7 +191,7 @@ public:
       }
 
       // varName
-      cout << "fn->";
+      vw.writeComment("parameter: " + jt.stringVal() + ", " + type) ;
       fnSt.define(jt.stringVal(), type, KIND_ARG);
       eat(IDENTIFIER);
 
@@ -190,18 +211,21 @@ public:
           }
 
           // varName
-          cout << "fn->";
+          vw.writeComment("parameter: " + jt.stringVal() + ", " + type) ;
           fnSt.define(jt.stringVal(), type, KIND_ARG);
           eat(IDENTIFIER);
       }
   }
 
-  void compileSubroutineBody() {
+  void compileSubroutineBody(const string& fn) {
       // {
       eat(SYMBOL);
 
       // varDec*
+      // Can only write function name after
+      // figure out how many local variables
       compileVarDec();
+      vw.writeFunction(fn, fnSt.varCount(KIND_VAR));
 
       // statements
       compileStatements();
@@ -227,7 +251,7 @@ public:
           }
 
           // varName
-          cout << "fn->";
+          vw.writeComment("var: " + jt.stringVal() + ", " + type) ;
           fnSt.define(jt.stringVal(), type, KIND_VAR);
           eat(IDENTIFIER);
 
@@ -237,7 +261,7 @@ public:
               eat(SYMBOL);
 
               // varName with same type
-              cout << "fn->";
+              vw.writeComment("var: " + jt.stringVal() + ", " + type) ;
               fnSt.define(jt.stringVal(), type, KIND_VAR);
               eat(IDENTIFIER);
           }
@@ -269,10 +293,11 @@ public:
   }
 
   void compileLet() {
+      vw.writeComment("Compile let");
       eat(KEYWORD);
 
       // varName
-      cout << "using: " << jt.stringVal() << "\n";
+      string id = jt.stringVal();
       eat(IDENTIFIER);
 
       // [
@@ -291,19 +316,31 @@ public:
 
       // expression
       compileExpression();
+      // let <id> = <expression>;
+      vw.writeComment("let: " + id) ;
+      writePopVar(id);
 
       // ;
       eat(SYMBOL);
   }
 
   void compileIf() {
+      vw.writeComment("Compile if");
       eat(KEYWORD);
+
+      string ifLabel = nextLabel();
+      string elseLabel = nextLabel();
 
       // (
       eat(SYMBOL);
 
       // expression
       compileExpression();
+      // not expression
+      vw.writeArithmetic(A_NOT);
+
+      // if-goto L1
+      vw.writeIf(ifLabel);
 
       // )
       eat(SYMBOL);
@@ -316,6 +353,10 @@ public:
 
       // }
       eat(SYMBOL);
+
+      // goto L2
+      vw.writeGoto(elseLabel);
+      vw.writeLabel(ifLabel);
 
       if (jt.keyWord() == ELSE) {
           eat(KEYWORD);
@@ -329,10 +370,19 @@ public:
           // }
           eat(SYMBOL);
       }
+      // label L2
+      vw.writeLabel(elseLabel);
   }
 
   void compileWhile() {
+      vw.writeComment("Compile while");
+
       eat(KEYWORD);
+
+      // insert while label
+      string enterLabel = nextLabel();
+      string exitLabel = nextLabel();
+      vw.writeLabel(enterLabel);
 
       // (
       eat(SYMBOL);
@@ -343,6 +393,12 @@ public:
       // )
       eat(SYMBOL);
 
+      // not expression for easier computation
+      vw.writeArithmetic(A_NOT);
+
+      // if-goto L2
+      vw.writeIf(exitLabel);
+
       // {
       eat(SYMBOL);
 
@@ -351,6 +407,12 @@ public:
 
       // }
       eat(SYMBOL);
+
+      // goto L1
+      vw.writeGoto(enterLabel);
+
+      // exit Label
+      vw.writeLabel(exitLabel);
   }
 
   void compileDo() {
@@ -359,31 +421,42 @@ public:
       // subroutineCall
       // subroutineName or (className | varName)
       string id = jt.stringVal();
-      if (classSt.kindOf(id) != -1 || fnSt.kindOf(id) != -1) {
-          cout << "using: " << id << "\n";
-      }
       eat(IDENTIFIER);
 
-      string subroutineFullName = id;
+      string subroutineFullName = "";
+      int expressionCounts = 0;
+      if (hasSymbol(id)) {
+          // call method
+          // push callee obj
+          writePushVar(id);
+          expressionCounts = 1;
+      }
+
       if (jt.tokenType() == SYMBOL && jt.symbol() == '.') {
           eat(SYMBOL);
           // subroutineName
-          subroutineFullName += ("." + jt.stringVal());
+          // Foo.bar()
+          subroutineFullName = id + "." + jt.stringVal();
           eat(IDENTIFIER);
+      } else {
+          // bar()
+          subroutineFullName = className + "." + id;
       }
 
       // (
       eat(SYMBOL);
 
-      int expressionCounts = compileExpressionList();
+      expressionCounts += compileExpressionList();
 
       // )
       eat(SYMBOL);
 
-      vw.writeCall(subroutineFullName, expressionCounts);
-
       //;
       eat(SYMBOL);
+
+      vw.writeComment("call: " + subroutineFullName + ", " + to_string(expressionCounts));
+      vw.writeCall(subroutineFullName, expressionCounts);
+      vw.writePop(S_TEMP, 0);
   }
 
   void compileReturn() {
@@ -393,9 +466,11 @@ public:
       if (jt.tokenType() != SYMBOL) {
           compileExpression();
       } else {
-          vw.writeVoid();
+          // void function just push a dummy value
+          vw.writePush(S_CONST, 0);
       }
 
+      vw.writeComment("return");
       vw.writeReturn();
 
       // ;
@@ -425,8 +500,20 @@ public:
           eat(STRING_CONST);
       } else if (jt.tokenType() == KEYWORD) {
           // keywordConstant, true, false, null, this
-          // (probably should do further check)
-          // TODO
+          if (jt.keyWord() == TRUE) {
+              // should we write -1 or 1 for true?
+              vw.writePush(S_CONST, 0);
+              vw.writeArithmetic(A_NOT);
+          } else if (jt.keyWord() == FALSE) {
+              vw.writePush(S_CONST, 0);
+          } else if (jt.keyWord() == JNULL) {
+              vw.writePush(S_CONST, 0);
+          } else if (jt.keyWord() == THIS){
+              vw.writePush(S_POINTER, 0);
+          } else {
+              // unknown keyword
+              assert(false);
+          }
           eat(KEYWORD);
       } else if (jt.tokenType() == SYMBOL && jt.symbol() == '(') {
           // (
@@ -451,36 +538,53 @@ public:
           string curToken = jt.getXml(IDENTIFIER);
           jt.advance();
 
+          int expressionCounts = 0;
           if (jt.tokenType() == SYMBOL && jt.symbol() == '.') {
-              // Foo.Bar()
+              if (hasSymbol(id)) {
+                  writePushVar(id);
+                  expressionCounts = 1;
+              }
+
+              // Foo.bar()
               eat(SYMBOL);
 
               // subroutineName
+              string subroutineFullName = id + "." + jt.stringVal();
               eat(IDENTIFIER);
 
               // (
               eat(SYMBOL);
 
-              compileExpressionList();
+              expressionCounts += compileExpressionList();
 
               // )
               eat(SYMBOL);
+
+              vw.writeComment("call: " + subroutineFullName +  + ", " + to_string(expressionCounts));
+              vw.writeCall(subroutineFullName, expressionCounts);
           } else if (jt.tokenType() == SYMBOL && jt.symbol() == '(') {
-              // Foo()
-              // subroutineName
-              eat(IDENTIFIER);
+              if (hasSymbol(id)) {
+                  writePushVar(id);
+                  expressionCounts = 1;
+              }
 
+              // bar()
               // (
               eat(SYMBOL);
 
-              compileExpressionList();
+              expressionCounts += compileExpressionList();
 
               // )
               eat(SYMBOL);
+
+              string subroutineFullName = className + "." + id;
+              vw.writeComment("call: " + id + ", " + to_string(expressionCounts));
+              vw.writeCall(id, expressionCounts);
           } else if (jt.tokenType() == SYMBOL && jt.symbol() == '[') {
               // [
               eat(SYMBOL);
 
+              // TODO array handling
               compileExpression();
 
               // ]
@@ -488,32 +592,31 @@ public:
           } else {
               // foo
               writePushVar(id);
-              cout << "using: " << id << "\n";
           }
       }
   }
 
   int compileExpressionList() {
-      int expressionCount = 0;
+      int nExps = 0;
       if (jt.tokenType() == SYMBOL
           && jt.symbol() != '-'
           && jt.symbol() != '~'
           && jt.symbol() != '('
       ) {
           // no expression
-          return expressionCount;
+          return nExps;
       }
 
       compileExpression();
-      ++expressionCount;
+      ++nExps;
 
       while (jt.tokenType() == SYMBOL && jt.symbol() == ',') {
           eat(SYMBOL);
 
           compileExpression();
-          ++expressionCount;
+          ++nExps;
       }
 
-      return expressionCount;
+      return nExps;
   }
 };

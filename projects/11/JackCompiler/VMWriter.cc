@@ -1,6 +1,6 @@
 // segments
 string S_CONST = "constant";
-string S_ARG = "arg";
+string S_ARG = "argument";
 string S_LOCAL = "local";
 string S_STATIC = "static";
 string S_THIS = "this";
@@ -85,9 +85,8 @@ public:
         output << "return\n";
     }
 
-    void writeVoid() {
-        output << "pop temp 0\n";
-        output << "push constant 0\n";
+    void writeComment(const string& comment) {
+        output << "// " << comment << "\n";
     }
 
     void close() {
