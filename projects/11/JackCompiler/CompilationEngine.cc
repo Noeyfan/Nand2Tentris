@@ -25,12 +25,12 @@ private:
   }
 
   SymbolTable& getSymbolTable(const string& id) {
-      if (classSt.kindOf(id) != -1) {
-          return classSt;
-      }
-
       if (fnSt.kindOf(id) != -1) {
           return fnSt;
+      }
+
+      if (classSt.kindOf(id) != -1) {
+          return classSt;
       }
 
       // undefined symbol
@@ -39,6 +39,11 @@ private:
 
   bool hasSymbol(const string& id) {
       return (classSt.kindOf(id) != -1) || (fnSt.kindOf(id) != -1);
+  }
+
+  string getSymbolType(const string& id) {
+      SymbolTable& st = getSymbolTable(id);
+      return st.typeOf(id);
   }
 
   void writePushVar(string& id) {
@@ -130,6 +135,11 @@ public:
           // , varName
           while (jt.tokenType() == SYMBOL && jt.symbol() == ',') {
               eat(SYMBOL);
+
+              // varName
+              name = jt.stringVal();
+              vw.writeComment("classVarDec: " + name + ", " + type);
+              classSt.define(name, type, kind);
               eat(IDENTIFIER);
           }
 
@@ -144,6 +154,7 @@ public:
           || jt.keyWord() == FUNCTION
           || jt.keyWord() == METHOD
       ) {
+          int fnType = jt.keyWord();
           eat(KEYWORD);
 
           // return type
@@ -157,27 +168,38 @@ public:
               eat(IDENTIFIER);
           }
 
+          string fn;
+          if (fnType == CONSTRUCTOR) {
+            fn = className + ".new";
+          } else {
+            fn = className + "." + jt.stringVal();
+          }
+
           // subroutineName
-          string fn = className + "." + jt.stringVal();
           eat(IDENTIFIER);
 
           // (
           eat(SYMBOL);
 
           // parameterList
-          compileParameterList();
+          compileParameterList(fnType);
 
           // )
           eat(SYMBOL);
 
-          compileSubroutineBody(fn);
+          compileSubroutineBody(fn, fnType);
 
           // clear symbol table
           fnSt.clear();
       }
   }
 
-  void compileParameterList() {
+  void compileParameterList(int fnType) {
+      if (fnType == METHOD) {
+          // this pointer, always of type <className>
+          fnSt.define("this", className, KIND_ARG);
+      }
+
       string type = jt.stringVal();
       if (jt.keyWord() == INT
           || jt.keyWord() == CHAR
@@ -217,7 +239,7 @@ public:
       }
   }
 
-  void compileSubroutineBody(const string& fn) {
+  void compileSubroutineBody(const string& fn, int fnType) {
       // {
       eat(SYMBOL);
 
@@ -226,6 +248,16 @@ public:
       // figure out how many local variables
       compileVarDec();
       vw.writeFunction(fn, fnSt.varCount(KIND_VAR));
+
+      if (fnType == CONSTRUCTOR) {
+          int nFields = classSt.varCount(KIND_FIELD);
+          vw.writePush(S_CONST, nFields);
+          vw.writeAlloc();
+          vw.writePop(S_POINTER, 0);
+      } else if (fnType == METHOD) {
+          vw.writePush(S_ARG, 0);
+          vw.writePop(S_POINTER, 0);
+      }
 
       // statements
       compileStatements();
@@ -425,21 +457,23 @@ public:
 
       string subroutineFullName = "";
       int expressionCounts = 0;
-      if (hasSymbol(id)) {
-          // call method
-          // push callee obj
-          writePushVar(id);
-          expressionCounts = 1;
-      }
-
       if (jt.tokenType() == SYMBOL && jt.symbol() == '.') {
           eat(SYMBOL);
           // subroutineName
           // Foo.bar()
+          if (hasSymbol(id)) {
+              // call method
+              // push callee obj
+              writePushVar(id);
+              expressionCounts = 1;
+              id = getSymbolType(id);
+          }
           subroutineFullName = id + "." + jt.stringVal();
           eat(IDENTIFIER);
       } else {
           // bar()
+          vw.writePush(S_POINTER, 0);
+          expressionCounts = 1;
           subroutineFullName = className + "." + id;
       }
 
@@ -508,7 +542,7 @@ public:
               vw.writePush(S_CONST, 0);
           } else if (jt.keyWord() == JNULL) {
               vw.writePush(S_CONST, 0);
-          } else if (jt.keyWord() == THIS){
+          } else if (jt.keyWord() == THIS) {
               vw.writePush(S_POINTER, 0);
           } else {
               // unknown keyword
@@ -540,13 +574,14 @@ public:
 
           int expressionCounts = 0;
           if (jt.tokenType() == SYMBOL && jt.symbol() == '.') {
+              eat(SYMBOL);
+
+              // Foo.bar()
               if (hasSymbol(id)) {
                   writePushVar(id);
                   expressionCounts = 1;
+                  id = getSymbolType(id);
               }
-
-              // Foo.bar()
-              eat(SYMBOL);
 
               // subroutineName
               string subroutineFullName = id + "." + jt.stringVal();
@@ -563,10 +598,9 @@ public:
               vw.writeComment("call: " + subroutineFullName +  + ", " + to_string(expressionCounts));
               vw.writeCall(subroutineFullName, expressionCounts);
           } else if (jt.tokenType() == SYMBOL && jt.symbol() == '(') {
-              if (hasSymbol(id)) {
-                  writePushVar(id);
-                  expressionCounts = 1;
-              }
+              // push this
+              vw.writePush(S_POINTER, 0);
+              expressionCounts = 1;
 
               // bar()
               // (

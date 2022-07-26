@@ -77,6 +77,10 @@ public:
         output << "call "<< name << " " << nArgs << "\n";
     }
 
+    void writeAlloc() {
+        output << "call Memory.alloc 1" << "\n";
+    }
+
     void writeFunction(const string& name, int nLocals) {
         output << "function " << name << " " << nLocals << "\n";
     }
@@ -86,7 +90,7 @@ public:
     }
 
     void writeComment(const string& comment) {
-        output << "// " << comment << "\n";
+        // output << "// " << comment << "\n";
     }
 
     void close() {
