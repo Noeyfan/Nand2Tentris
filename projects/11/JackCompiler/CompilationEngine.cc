@@ -148,7 +148,6 @@ public:
       }
   }
 
-  // TODO, complete me next
   void compileSubroutineDec() {
       while (jt.keyWord() == CONSTRUCTOR
           || jt.keyWord() == FUNCTION
@@ -580,7 +579,6 @@ public:
           eat(KEYWORD);
       } else if (jt.tokenType() == SYMBOL && jt.symbol() == '(') {
           // (
-          // TODO
           eat(SYMBOL);
 
           compileExpression();
@@ -598,7 +596,6 @@ public:
       } else if (jt.tokenType() == IDENTIFIER) {
           // varName or subroutineCall
           string id = jt.stringVal();
-          string curToken = jt.getXml(IDENTIFIER);
           jt.advance();
 
           bool isArray = false;
