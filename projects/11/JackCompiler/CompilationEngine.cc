@@ -333,11 +333,20 @@ public:
       eat(IDENTIFIER);
 
       // [
+      bool isArray = false;
       if (jt.tokenType() == SYMBOL && jt.symbol() == '[') {
+          isArray = true;
+
           eat(SYMBOL);
+
+          // push arr (base addr)
+          writePushVar(id);
 
           // expression
           compileExpression();
+
+          // add (offset from expression)
+          vw.writeArithmetic(A_ADD);
 
           // ]
           eat(SYMBOL);
@@ -350,7 +359,16 @@ public:
       compileExpression();
       // let <id> = <expression>;
       vw.writeComment("let: " + id) ;
-      writePopVar(id);
+
+      if (isArray) {
+          // pop THAT
+          vw.writePop(S_TEMP, 0);
+          vw.writePop(S_POINTER, 1);
+          vw.writePush(S_TEMP, 0);
+          vw.writePop(S_THAT, 0);
+      } else {
+          writePopVar(id);
+      }
 
       // ;
       eat(SYMBOL);
@@ -530,7 +548,18 @@ public:
           eat(INT_CONST);
       } else if (jt.tokenType() == STRING_CONST) {
           // stringConstant
-          // TODO
+          string str = jt.stringVal();
+          int size = str.size();
+          // alloc string size
+          vw.writePush(S_CONST, size);
+          vw.writeCall("String.new", 1);
+
+          // setting each character in memory
+          for (int i = 0; i < size; ++i) {
+              vw.writePush(S_CONST, (int)(str[i]));
+              vw.writeCall("String.appendChar", 2);
+          }
+
           eat(STRING_CONST);
       } else if (jt.tokenType() == KEYWORD) {
           // keywordConstant, true, false, null, this
@@ -572,6 +601,7 @@ public:
           string curToken = jt.getXml(IDENTIFIER);
           jt.advance();
 
+          bool isArray = false;
           int expressionCounts = 0;
           if (jt.tokenType() == SYMBOL && jt.symbol() == '.') {
               eat(SYMBOL);
@@ -615,11 +645,24 @@ public:
               vw.writeComment("call: " + id + ", " + to_string(expressionCounts));
               vw.writeCall(id, expressionCounts);
           } else if (jt.tokenType() == SYMBOL && jt.symbol() == '[') {
-              // [
+              isArray = true;
+
               eat(SYMBOL);
 
-              // TODO array handling
+              // push arr (base addr)
+              writePushVar(id);
+
+              // expression
               compileExpression();
+
+              // add (offset from expression)
+              vw.writeArithmetic(A_ADD);
+
+              // set THAT
+              vw.writePop(S_POINTER, 1);
+
+              // push value onto stack
+              vw.writePush(S_THAT, 0);
 
               // ]
               eat(SYMBOL);

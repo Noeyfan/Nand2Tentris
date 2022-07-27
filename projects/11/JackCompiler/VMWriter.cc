@@ -28,6 +28,7 @@ static unordered_map<char, string> ops = {
       {'&', A_AND},
       {'|', A_OR},
       {'*', "call Math.multiply 2"},
+      {'/', "call Math.divide 2"},
 };
 
 static unordered_map<char, string> uops = {
